@@ -79,6 +79,21 @@ The repository layer (`src/repositories/`) is responsible **only** for direct da
 
 The service layer contains the application's core business logic, including validations, hashing, JWT token generation, and workflow coordination.
 
+### 3. Validation Layer
+
+Request payloads are intercepted and validated at the route boundary using Zod schemas (`src/validators/`) and a higher-order middleware factory (`src/middlewares/validation.middleware.js`).
+
+- **Fail-Fast Policy:** Bad requests are immediately terminated and return a `400 Bad Request` status.
+- **Unified Error payload:** Outputs errors normalized via the standardized response utility.
+
+### 4. Utility Layer
+
+Contains reusable helper utilities and configuration:
+
+- `constants.js`: Single source of truth for roles, messaging strings, and status codes.
+- `response.js`: Unifies successful and error API response structures.
+- `jwt.js` & `bcrypt.js`: Encapsulates cryptographic operations.
+
 ---
 
 ## Getting Started
@@ -95,6 +110,8 @@ Configure the `.env` file in the root directory:
 ```env
 DATABASE_URL="postgresql://<user>:<password>@localhost:5432/<dbname>"
 PORT=5000
+JWT_SECRET="your-secure-jwt-access-secret"
+JWT_REFRESH_SECRET="your-secure-jwt-refresh-secret"
 ```
 
 ### Setup & Run
