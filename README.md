@@ -68,25 +68,33 @@ We use Prisma with PostgreSQL. Below is the `User` model and `UserRole` enum cur
 
 This project strictly adheres to a layered architecture: **Controller ➔ Service ➔ Repository ➔ Prisma Client ➔ PostgreSQL**.
 
-### 1. Repository Layer
+### 1. Controller Layer
+
+The controller layer (`src/controllers/`) acts strictly as an adapter mapping HTTP requests to service invocations.
+
+- **Strict Rule:** Controllers must remain "thin" and contain absolutely zero business logic, database queries, password hashing, or token generation.
+- All errors are passed downward using `next(error)` to a centralized global error handler.
+- Responses are formatted exclusively via the response utility.
+
+### 2. Repository Layer
 
 The repository layer (`src/repositories/`) is responsible **only** for direct database CRUD operations.
 
 - All database queries/updates are abstracted inside repositories.
 - **Strict Rule:** Zero business logic validation, password hashing, token generation, or HTTP response handling exists in this layer.
 
-### 2. Service Layer
+### 3. Service Layer
 
 The service layer contains the application's core business logic, including validations, hashing, JWT token generation, and workflow coordination.
 
-### 3. Validation Layer
+### 4. Validation Layer
 
 Request payloads are intercepted and validated at the route boundary using Zod schemas (`src/validators/`) and a higher-order middleware factory (`src/middlewares/validation.middleware.js`).
 
 - **Fail-Fast Policy:** Bad requests are immediately terminated and return a `400 Bad Request` status.
 - **Unified Error payload:** Outputs errors normalized via the standardized response utility.
 
-### 4. Utility Layer
+### 5. Utility Layer
 
 Contains reusable helper utilities and configuration:
 
