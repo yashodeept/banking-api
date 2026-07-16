@@ -94,7 +94,13 @@ Request payloads are intercepted and validated at the route boundary using Zod s
 - **Fail-Fast Policy:** Bad requests are immediately terminated and return a `400 Bad Request` status.
 - **Unified Error payload:** Outputs errors normalized via the standardized response utility.
 
-### 5. Utility Layer
+### 5. Middleware Layer
+
+The middleware layer (`src/middlewares/`) handles cross-cutting concerns like global error handling, payload validation, and request authentication.
+
+- **Authentication Interceptor:** The JWT Auth middleware verifies the token signature, checks the database to ensure the session/user is still valid (preventing stale sessions), and injects a sanitized payload into `req.user`.
+
+### 6. Utility Layer
 
 Contains reusable helper utilities and configuration:
 

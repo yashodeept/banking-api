@@ -9,7 +9,7 @@ const rateLimit = require("express-rate-limit");
 const env = require("./config/env");
 const logger = require("./config/logger");
 const { setupSwagger } = require("./config/swagger");
-const v1Router = require("./routes");
+const apiRouter = require("./routes");
 const globalErrorHandler = require("./middlewares/errorHandler");
 
 const app = express();
@@ -60,7 +60,7 @@ app.use(
 setupSwagger(app);
 
 // 7. Mount Core API Routes
-app.use("/api/v1", v1Router);
+app.use("/api", apiRouter);
 
 // 8. Base & Health Check routes
 app.get("/health", (req, res) => {
