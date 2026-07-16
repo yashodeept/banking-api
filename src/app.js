@@ -10,7 +10,7 @@ const env = require("./config/env");
 const logger = require("./config/logger");
 const { setupSwagger } = require("./config/swagger");
 const apiRouter = require("./routes");
-const globalErrorHandler = require("./middlewares/errorHandler");
+const globalErrorHandler = require("./middlewares/error.middleware");
 
 const app = express();
 

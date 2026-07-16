@@ -87,6 +87,8 @@ The repository layer (`src/repositories/`) is responsible **only** for direct da
 
 The service layer contains the application's core business logic, including validations, hashing, JWT token generation, and workflow coordination.
 
+- **Strict Rule:** Services and repositories must never return error shapes or HTTP status codes. They must explicitly throw a semantic error instance (e.g., `new ConflictError('User exists')`).
+
 ### 4. Validation Layer
 
 Request payloads are intercepted and validated at the route boundary using Zod schemas (`src/validators/`) and a higher-order middleware factory (`src/middlewares/validation.middleware.js`).
@@ -99,6 +101,7 @@ Request payloads are intercepted and validated at the route boundary using Zod s
 The middleware layer (`src/middlewares/`) handles cross-cutting concerns like global error handling, payload validation, and request authentication.
 
 - **Authentication Interceptor:** The JWT Auth middleware verifies the token signature, checks the database to ensure the session/user is still valid (preventing stale sessions), and injects a sanitized payload into `req.user`.
+- **Global Error Interceptor:** All exceptions are passed to this centralized handler. It dynamically translates native runtime failures, Prisma database constraints, and custom AppError instances into a uniform JSON response masking internal traces securely in production.
 
 ### 6. Utility Layer
 
