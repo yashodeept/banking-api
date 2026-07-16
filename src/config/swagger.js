@@ -7,7 +7,7 @@ const options = {
     openapi: "3.0.0",
     info: {
       title: "Banking API",
-      version: "1.0.0",
+      version: "v1",
       description:
         "A secure, robust banking API built with Node.js, Express, and Prisma.",
       contact: {
@@ -16,23 +16,26 @@ const options = {
     },
     servers: [
       {
-        url: `http://localhost:${env.PORT}`,
-        description: "Development Server",
+        url: `http://localhost:${env.PORT}/api/v1`,
+        description: "Local Dev Target",
+      },
+      {
+        url: `https://api.yourdomain.com/api/v1`,
+        description: "Production Target",
       },
     ],
     components: {
       securitySchemes: {
-        bearerAuth: {
+        BearerAuth: {
           type: "http",
           scheme: "bearer",
           bearerFormat: "JWT",
-          description: "Enter your JWT token in the format: Bearer <token>",
         },
       },
     },
   },
   // Paths to files containing OpenAPI JSDoc annotations
-  apis: ["./src/routes/*.js", "./src/app.js"],
+  apis: ["./src/docs/swagger/**/*.js"],
 };
 
 const swaggerSpec = swaggerJsdoc(options);

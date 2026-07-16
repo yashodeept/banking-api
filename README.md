@@ -145,6 +145,8 @@ JWT_REFRESH_SECRET="your-secure-jwt-refresh-secret"
    ```bash
    npm run dev
    ```
+4. Access Interactive Documentation (Swagger UI):
+   Open `http://localhost:5000/api-docs` in your browser to view and test all available endpoints.
 
 ---
 
