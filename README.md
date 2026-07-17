@@ -122,6 +122,17 @@ We use Prisma with PostgreSQL. Below is the `User` model and `UserRole` enum cur
 - `PATCH /api/v1/wallet/unfreeze`: Restore wallet access (Requires `ADMIN`).
 - `PATCH /api/v1/wallet/close`: Terminate active wallet (Irreversible).
 
+### Transaction Operations
+- `POST /api/v1/transactions/deposit`: Deposit funds.
+- `POST /api/v1/transactions/withdraw`: Withdraw funds.
+- `POST /api/v1/transactions/transfer`: Transfer funds to another account.
+- `GET /api/v1/transactions`: Fetch transaction history.
+- `GET /api/v1/transactions/:reference`: View transaction details.
+
+### Ledger Operations
+- `GET /api/v1/ledger`: Fetch all ledger entries (Requires `ADMIN`, `AUDITOR`).
+- `GET /api/v1/ledger/:transactionRef`: Audit ledger entries by transaction (Requires `ADMIN`, `AUDITOR`).
+
 ---
 
 ## Architectural Design & Layer Isolation
@@ -156,7 +167,15 @@ Request payloads are intercepted and validated at the route boundary using Zod s
 - **Fail-Fast Policy:** Bad requests are immediately terminated and return a `400 Bad Request` status.
 - **Unified Error payload:** Outputs errors normalized via the standardized response utility.
 
-### 5. Middleware Layer
+### 5. Ledger Engine & Concurrency Guardrails
+
+To prevent race conditions and ensure immutable financial boundaries, the system uses a dual-layer accounting architecture:
+
+- **Atomic Transactions:** Uses `prisma.$transaction` block enclosures so any runtime exception rolls back all actions instantly.
+- **Pessimistic Locking:** Raw `SELECT ... FOR UPDATE` SQL queries are performed inside Prisma transactions to acquire database row locks on Wallet records.
+- **Ledger Records:** The `LedgerEntry` model represents an append-only append-only truth. Wallet `balance` serves only as a materialized read-cache layer that updates in real time with the ledger.
+
+### 6. Middleware Layer
 
 The middleware layer (`src/middlewares/`) handles cross-cutting concerns like global error handling, payload validation, and request authentication.
 

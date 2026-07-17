@@ -32,6 +32,55 @@ enum WalletStatus {
   CLOSED
 }
 
+enum TransactionStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  REVERSED
+}
+
+enum TransactionType {
+  DEPOSIT
+  WITHDRAW
+  TRANSFER
+}
+
+enum LedgerEntryType {
+  DEBIT
+  CREDIT
+}
+
+model Transaction {
+  id               String            @id @default(cuid())
+  transactionRef   String            @unique
+  type             TransactionType
+  status           TransactionStatus @default(PENDING)
+  amount           Decimal           @db.Decimal(18, 2)
+  description      String?
+  senderWalletId   String?
+  receiverWalletId String?
+  createdBy        String
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  senderWallet     Wallet?           @relation("SenderWallet", fields: [senderWalletId], references: [id])
+  receiverWallet   Wallet?           @relation("ReceiverWallet", fields: [receiverWalletId], references: [id])
+  ledgerEntries    LedgerEntry[]
+}
+
+model LedgerEntry {
+  id            String          @id @default(cuid())
+  transactionId String
+  walletId      String
+  entryType     LedgerEntryType
+  amount        Decimal         @db.Decimal(18, 2)
+  balanceAfter  Decimal         @db.Decimal(18, 2)
+  createdAt     DateTime        @default(now())
+
+  wallet        Wallet          @relation(fields: [walletId], references: [id])
+  transaction   Transaction     @relation(fields: [transactionId], references: [id])
+}
+
 model User {
   id            String      @id @default(cuid())
   customerId    String      @unique @default(cuid())
@@ -51,14 +100,18 @@ model User {
 }
 
 model Wallet {
-  id            String        @id @default(cuid())
-  walletNumber  String        @unique
-  balance       Decimal       @default(0.00) @db.Decimal(18,2)
-  currency      String        @default("INR")
-  status        WalletStatus  @default(ACTIVE)
-  userId        String        @unique
-  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                   String         @id @default(cuid())
+  walletNumber         String         @unique
+  balance              Decimal        @default(0.00) @db.Decimal(18,2)
+  currency             String         @default("INR")
+  status               WalletStatus   @default(ACTIVE)
+  userId               String         @unique
+  user                 User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+  
+  outgoingTransactions Transaction[]  @relation("SenderWallet")
+  incomingTransactions Transaction[]  @relation("ReceiverWallet")
+  ledgerEntries        LedgerEntry[]
 }
