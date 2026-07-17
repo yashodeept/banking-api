@@ -33,19 +33,50 @@ We use Prisma with PostgreSQL. Below is the `User` model and `UserRole` enum cur
 - `SUPPORT`: Customer support agent role.
 - `AUDITOR`: External/internal auditor role.
 
+### `UserStatus` Enum
+
+- `ACTIVE`: Normal user state.
+- `INACTIVE`: User soft-deleted or pending activation.
+- `BLOCKED`: User is administratively blocked.
+- `LOCKED`: User is locked due to security constraints.
+
+### `WalletStatus` Enum
+
+- `ACTIVE`: Wallet is open and functional.
+- `FROZEN`: Wallet interactions are suspended.
+- `CLOSED`: Wallet is terminated.
+
 ### `User` Model
 
-| Field          | Type       | Attributes / Modifiers    | Description                            |
-| -------------- | ---------- | ------------------------- | -------------------------------------- |
-| `id`           | `String`   | `@id`, `@default(cuid())` | Unique identifier.                     |
-| `fullName`     | `String`   |                           | User's full name.                      |
-| `email`        | `String`   | `@unique`                 | User's email address (unique).         |
-| `password`     | `String`   |                           | Hashed password.                       |
-| `role`         | `UserRole` | `@default(CUSTOMER)`      | User's permission level.               |
-| `isVerified`   | `Boolean`  | `@default(false)`         | Flag indicating if email is verified.  |
-| `refreshToken` | `String?`  | Optional                  | Refresh token for authentication flow. |
-| `createdAt`    | `DateTime` | `@default(now())`         | Creation timestamp.                    |
-| `updatedAt`    | `DateTime` | `@updatedAt`              | Automatic update timestamp.            |
+| Field          | Type         | Attributes / Modifiers    | Description                            |
+| -------------- | ------------ | ------------------------- | -------------------------------------- |
+| `id`           | `String`     | `@id`, `@default(cuid())` | Unique identifier.                     |
+| `customerId`   | `String`     | `@unique`                 | Unique customer domain ID.             |
+| `fullName`     | `String`     |                           | User's full name.                      |
+| `email`        | `String`     | `@unique`                 | User's email address (unique).         |
+| `phone`        | `String?`    | `@unique`                 | User's phone number.                   |
+| `password`     | `String`     |                           | Hashed password.                       |
+| `role`         | `UserRole`   | `@default(CUSTOMER)`      | User's permission level.               |
+| `status`       | `UserStatus` | `@default(ACTIVE)`        | User lifecycle state.                  |
+| `isVerified`   | `Boolean`    | `@default(false)`         | Flag indicating if email is verified.  |
+| `refreshToken` | `String?`    | Optional                  | Refresh token for authentication flow. |
+| `lastLogin`    | `DateTime?`  | Optional                  | Timestamp of last active login.        |
+| `createdAt`    | `DateTime`   | `@default(now())`         | Creation timestamp.                    |
+| `updatedAt`    | `DateTime`   | `@updatedAt`              | Automatic update timestamp.            |
+| `wallet`       | `Wallet?`    | Relation                  | One-to-one relationship with Wallet.   |
+
+### `Wallet` Model
+
+| Field          | Type           | Attributes / Modifiers      | Description                               |
+| -------------- | -------------- | --------------------------- | ----------------------------------------- |
+| `id`           | `String`       | `@id`, `@default(cuid())`   | Unique identifier.                        |
+| `walletNumber` | `String`       | `@unique`                   | Unalterable cryptographic identifier.     |
+| `balance`      | `Decimal`      | `@default(0.00) @db.Decimal`| Financial balance (Decimal type).         |
+| `currency`     | `String`       | `@default("INR")`           | Fiat currency code.                       |
+| `status`       | `WalletStatus` | `@default(ACTIVE)`          | Wallet lifecycle state.                   |
+| `userId`       | `String`       | `@unique`                   | Reference to User owner.                  |
+| `createdAt`    | `DateTime`     | `@default(now())`           | Creation timestamp.                       |
+| `updatedAt`    | `DateTime`     | `@updatedAt`                | Automatic update timestamp.               |
 
 ### Database & Authentication Architecture Rules
 
@@ -61,6 +92,35 @@ We use Prisma with PostgreSQL. Below is the `User` model and `UserRole` enum cur
 #### 3. Role-Based Access Control (RBAC)
 
 - Simplifies authentication and authorization logic using the built-in `role` field aligned with standard roles: `ADMIN`, `CUSTOMER`, `BANK`, `SUPPORT`, and `AUDITOR`.
+
+#### 4. Lifecycle Interception
+
+- Identity & Wallet domains dynamically intercept BLOCKED, LOCKED, or INACTIVE status directly inside the authorization pipeline, preventing compromised accounts from further activity.
+
+#### 5. Financial Immutability
+
+- Wallet balances use `@db.Decimal(18,2)` to prevent JavaScript floating-point rounding errors.
+- `walletNumber` and user/wallet relationships remain immutable. Closed wallets cannot be reopened.
+
+---
+
+## API Endpoints Overview
+
+### User Operations
+- `GET /api/v1/users/me`: Fetch authenticated user profile.
+- `PATCH /api/v1/users/me`: Update profile details.
+- `PATCH /api/v1/users/change-password`: Update credentials.
+- `DELETE /api/v1/users/me`: Soft-delete account.
+- `GET /api/v1/users`: List all profiles (Requires `ADMIN` or `AUDITOR`).
+- `PATCH /api/v1/users/:id/status`: Change user lifecycle status (Requires `ADMIN`).
+- `PATCH /api/v1/users/:id/role`: Change user role (Requires `ADMIN`).
+
+### Wallet Operations
+- `POST /api/v1/wallet`: Create personal wallet instance.
+- `GET /api/v1/wallet`: Fetch active wallet details.
+- `PATCH /api/v1/wallet/freeze`: Suspend wallet transactions (Requires `ADMIN`).
+- `PATCH /api/v1/wallet/unfreeze`: Restore wallet access (Requires `ADMIN`).
+- `PATCH /api/v1/wallet/close`: Terminate active wallet (Irreversible).
 
 ---
 
@@ -151,6 +211,21 @@ JWT_REFRESH_SECRET="your-secure-jwt-refresh-secret"
 ---
 
 ## Automation & Quality Checks
+
+### Integration & Security Testing
+
+This project utilizes `Jest` and `Supertest` to comprehensively verify integration pipelines and security boundaries. Tests automatically run against an isolated test database defined in `.env.test`.
+
+**To execute the test suite locally:**
+1. Ensure your PostgreSQL instance is running.
+2. Initialize the isolated test database schema:
+   ```bash
+   npm run test:db:setup
+   ```
+3. Run the automated test matrix:
+   ```bash
+   npm run test
+   ```
 
 ### Pre-commit README Verification Hook
 

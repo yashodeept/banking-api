@@ -69,6 +69,51 @@ async function deleteRefreshToken(userId) {
   });
 }
 
+async function findUserByCustomerId(customerId) {
+  return prisma.user.findUnique({
+    where: { customerId },
+  });
+}
+
+async function updateProfile(id, data) {
+  return prisma.user.update({
+    where: { id },
+    data,
+  });
+}
+
+async function changePassword(id, hashedPassword) {
+  return prisma.user.update({
+    where: { id },
+    data: { password: hashedPassword },
+  });
+}
+
+async function updateUserStatus(id, status) {
+  return prisma.user.update({
+    where: { id },
+    data: { status },
+  });
+}
+
+async function updateUserRole(id, role) {
+  return prisma.user.update({
+    where: { id },
+    data: { role },
+  });
+}
+
+async function getAllUsers() {
+  return prisma.user.findMany();
+}
+
+async function softDeleteUser(id) {
+  return prisma.user.update({
+    where: { id },
+    data: { status: 'INACTIVE' },
+  });
+}
+
 module.exports = {
   createUser,
   findUserByEmail,
@@ -76,4 +121,11 @@ module.exports = {
   findUserByRefreshToken,
   updateRefreshToken,
   deleteRefreshToken,
+  findUserByCustomerId,
+  updateProfile,
+  changePassword,
+  updateUserStatus,
+  updateUserRole,
+  getAllUsers,
+  softDeleteUser,
 };

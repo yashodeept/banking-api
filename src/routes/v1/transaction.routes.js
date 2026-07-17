@@ -1,7 +1,7 @@
 const express = require("express");
 const { z } = require("zod");
-const validate = require("../middlewares/validate");
-const { protect } = require("../middlewares/auth");
+const validate = require("../../middlewares/validate");
+const { protect } = require("../../middlewares/auth");
 
 const router = express.Router();
 
