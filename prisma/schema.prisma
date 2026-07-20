@@ -39,6 +39,21 @@ enum TransactionStatus {
   REVERSED
 }
 
+enum PaymentStatus {
+  INITIATED
+  PROCESSING
+  SUCCESS
+  FAILED
+  REVERSED
+}
+
+enum PaymentMethod {
+  UPI
+  BANK_TRANSFER
+  CARD
+  WALLET
+}
+
 enum TransactionType {
   DEPOSIT
   WITHDRAW
@@ -66,6 +81,7 @@ model Transaction {
   senderWallet     Wallet?           @relation("SenderWallet", fields: [senderWalletId], references: [id])
   receiverWallet   Wallet?           @relation("ReceiverWallet", fields: [receiverWalletId], references: [id])
   ledgerEntries    LedgerEntry[]
+  payments         Payment[]
 }
 
 model LedgerEntry {
@@ -114,4 +130,32 @@ model Wallet {
   outgoingTransactions Transaction[]  @relation("SenderWallet")
   incomingTransactions Transaction[]  @relation("ReceiverWallet")
   ledgerEntries        LedgerEntry[]
+}
+
+model Payment {
+  id             String        @id @default(cuid())
+  paymentRef     String        @unique
+  transactionId  String
+  amount         Decimal       @db.Decimal(18, 2)
+  method         PaymentMethod
+  status         PaymentStatus @default(INITIATED)
+  idempotencyKey String        @unique
+  gatewayResponse Json?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  transaction    Transaction   @relation(fields: [transactionId], references: [id])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String
+  action    String
+  entity    String
+  entityId  String
+  oldValue  Json?
+  newValue  Json?
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
 }

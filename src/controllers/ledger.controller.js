@@ -8,16 +8,18 @@ class LedgerController {
       // Let's assume they pass ?walletId=xxx
       const { walletId } = req.query;
       let logs;
-      
+
       if (walletId) {
         logs = await ledgerRepository.findLedgerByWallet(walletId);
       } else {
         // Fetch all (mock implementation for "all logs" if needed)
         // Usually you'd paginate through all ledger entries
         const prisma = require("../lib/prisma");
-        logs = await prisma.ledgerEntry.findMany({ orderBy: { createdAt: "desc" }});
+        logs = await prisma.ledgerEntry.findMany({
+          orderBy: { createdAt: "desc" },
+        });
       }
-      
+
       res.status(200).json({ success: true, data: logs });
     } catch (error) {
       next(error);
@@ -29,11 +31,15 @@ class LedgerController {
       // GET /ledger/:transactionRef
       const prisma = require("../lib/prisma");
       const { transactionRef } = req.params;
-      
+
       // Find transaction by ref first to get its ID
-      const tx = await prisma.transaction.findUnique({ where: { transactionRef } });
+      const tx = await prisma.transaction.findUnique({
+        where: { transactionRef },
+      });
       if (!tx) {
-        return res.status(404).json({ success: false, message: "Transaction not found" });
+        return res
+          .status(404)
+          .json({ success: false, message: "Transaction not found" });
       }
 
       const entries = await prisma.ledgerEntry.findMany({

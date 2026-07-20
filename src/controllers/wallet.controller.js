@@ -3,7 +3,10 @@ const walletService = require("../services/wallet.service");
 class WalletController {
   async createWallet(req, res, next) {
     try {
-      const wallet = await walletService.createWallet(req.user.id, req.body.currency);
+      const wallet = await walletService.createWallet(
+        req.user.id,
+        req.body.currency,
+      );
       res.status(201).json({ success: true, data: wallet });
     } catch (error) {
       next(error);

@@ -33,7 +33,7 @@ async function updateWalletBalance(id, balance, tx = prisma) {
 async function closeWallet(id, tx = prisma) {
   return tx.wallet.update({
     where: { id },
-    data: { status: 'CLOSED' },
+    data: { status: "CLOSED" },
   });
 }
 

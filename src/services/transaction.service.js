@@ -19,29 +19,34 @@ class TransactionService {
    */
   _validateConstraints(wallet, amount) {
     if (amount <= 0) {
-      throw new BadRequestError("Transaction amount must be strictly greater than zero");
+      throw new BadRequestError(
+        "Transaction amount must be strictly greater than zero",
+      );
     }
     if (!wallet) {
       throw new NotFoundError("Wallet not found");
     }
     if (wallet.status !== "ACTIVE") {
-      throw new BadRequestError(`Wallet is ${wallet.status}. Active status required.`);
+      throw new BadRequestError(
+        `Wallet is ${wallet.status}. Active status required.`,
+      );
     }
   }
 
   /**
    * Executes a deposit transaction.
-   * @param {string} receiverWalletId 
-   * @param {number} amount 
-   * @param {string} createdBy 
-   * @param {string} description 
+   * @param {string} receiverWalletId
+   * @param {number} amount
+   * @param {string} createdBy
+   * @param {string} description
    */
   async deposit(receiverWalletId, amount, createdBy, description) {
     return prisma.$transaction(async (tx) => {
       // 1. Acquire Database Lock
-      const wallets = await tx.$queryRaw`SELECT * FROM "Wallet" WHERE id = ${receiverWalletId} FOR UPDATE`;
+      const wallets =
+        await tx.$queryRaw`SELECT * FROM "Wallet" WHERE id = ${receiverWalletId} FOR UPDATE`;
       const wallet = wallets[0];
-      
+
       this._validateConstraints(wallet, amount);
 
       // 2. Initialize PENDING transaction
@@ -55,7 +60,7 @@ class TransactionService {
           receiverWalletId,
           createdBy,
         },
-        tx
+        tx,
       );
 
       // 3. Update Balance Cache & Write Ledger Entry (Atomic)
@@ -67,28 +72,33 @@ class TransactionService {
           amount,
           currentBalance: wallet.balance,
         },
-        tx
+        tx,
       );
 
       // 4. Mark transaction as SUCCESS
-      transaction = await transactionRepository.updateTransactionStatus(transaction.id, "SUCCESS", tx);
+      transaction = await transactionRepository.updateTransactionStatus(
+        transaction.id,
+        "SUCCESS",
+        tx,
+      );
       return transaction;
     });
   }
 
   /**
    * Executes a withdraw transaction.
-   * @param {string} senderWalletId 
-   * @param {number} amount 
-   * @param {string} createdBy 
-   * @param {string} description 
+   * @param {string} senderWalletId
+   * @param {number} amount
+   * @param {string} createdBy
+   * @param {string} description
    */
   async withdraw(senderWalletId, amount, createdBy, description) {
     return prisma.$transaction(async (tx) => {
       // 1. Acquire Database Lock
-      const wallets = await tx.$queryRaw`SELECT * FROM "Wallet" WHERE id = ${senderWalletId} FOR UPDATE`;
+      const wallets =
+        await tx.$queryRaw`SELECT * FROM "Wallet" WHERE id = ${senderWalletId} FOR UPDATE`;
       const wallet = wallets[0];
-      
+
       this._validateConstraints(wallet, amount);
       if (Number(wallet.balance) - amount < 0) {
         throw new BadRequestError("Insufficient funds for withdrawal");
@@ -105,7 +115,7 @@ class TransactionService {
           senderWalletId,
           createdBy,
         },
-        tx
+        tx,
       );
 
       // 3. Update Balance Cache & Write Ledger Entry (Atomic)
@@ -117,24 +127,34 @@ class TransactionService {
           amount,
           currentBalance: wallet.balance,
         },
-        tx
+        tx,
       );
 
       // 4. Mark transaction as SUCCESS
-      transaction = await transactionRepository.updateTransactionStatus(transaction.id, "SUCCESS", tx);
+      transaction = await transactionRepository.updateTransactionStatus(
+        transaction.id,
+        "SUCCESS",
+        tx,
+      );
       return transaction;
     });
   }
 
   /**
    * Executes a transfer transaction between two wallets.
-   * @param {string} senderWalletId 
-   * @param {string} receiverWalletId 
-   * @param {number} amount 
-   * @param {string} createdBy 
-   * @param {string} description 
+   * @param {string} senderWalletId
+   * @param {string} receiverWalletId
+   * @param {number} amount
+   * @param {string} createdBy
+   * @param {string} description
    */
-  async transfer(senderWalletId, receiverWalletId, amount, createdBy, description) {
+  async transfer(
+    senderWalletId,
+    receiverWalletId,
+    amount,
+    createdBy,
+    description,
+  ) {
     if (senderWalletId === receiverWalletId) {
       throw new BadRequestError("Cannot transfer funds to the same wallet");
     }
@@ -175,7 +195,7 @@ class TransactionService {
           receiverWalletId,
           createdBy,
         },
-        tx
+        tx,
       );
 
       // 4. Deduct from Sender
@@ -187,7 +207,7 @@ class TransactionService {
           amount,
           currentBalance: senderWallet.balance,
         },
-        tx
+        tx,
       );
 
       // 5. Add to Receiver
@@ -199,11 +219,15 @@ class TransactionService {
           amount,
           currentBalance: receiverWallet.balance,
         },
-        tx
+        tx,
       );
 
       // 6. Mark transaction as SUCCESS
-      transaction = await transactionRepository.updateTransactionStatus(transaction.id, "SUCCESS", tx);
+      transaction = await transactionRepository.updateTransactionStatus(
+        transaction.id,
+        "SUCCESS",
+        tx,
+      );
       return transaction;
     });
   }
@@ -213,7 +237,8 @@ class TransactionService {
   }
 
   async getTransactionDetails(transactionRef) {
-    const tx = await transactionRepository.findTransactionByReference(transactionRef);
+    const tx =
+      await transactionRepository.findTransactionByReference(transactionRef);
     if (!tx) {
       throw new NotFoundError("Transaction not found");
     }

@@ -110,7 +110,7 @@ async function getAllUsers() {
 async function softDeleteUser(id) {
   return prisma.user.update({
     where: { id },
-    data: { status: 'INACTIVE' },
+    data: { status: "INACTIVE" },
   });
 }
 

@@ -16,7 +16,7 @@ describe("Integration & Security Testing: Auth Pipeline", () => {
       const res = await request(app)
         .post("/api/v1/auth/register")
         .send(registerPayload);
-      
+
       expect(res.status).toBe(201);
       expect(res.body.success).toBe(true);
       expect(res.body.data).toBeDefined();
@@ -28,22 +28,25 @@ describe("Integration & Security Testing: Auth Pipeline", () => {
 
     it("Duplicate Exception Handling -> Conflict on duplicate email", async () => {
       await request(app).post("/api/v1/auth/register").send(registerPayload);
-      
+
       const res = await request(app)
         .post("/api/v1/auth/register")
         .send(registerPayload);
-      
+
       expect(res.status).toBe(409);
       expect(res.body.success).toBe(false);
       expect(res.body.error.code).toBe("CONFLICT");
     });
 
     it("Format Interception -> Invalid payload triggers validation error", async () => {
-      const invalidPayload = { fullName: "Test User", password: "Password123!" }; // missing email
+      const invalidPayload = {
+        fullName: "Test User",
+        password: "Password123!",
+      }; // missing email
       const res = await request(app)
         .post("/api/v1/auth/register")
         .send(invalidPayload);
-      
+
       expect(res.status).toBe(400);
       expect(res.body.success).toBe(false);
       expect(res.body.error.details).toBeDefined();
@@ -87,9 +90,11 @@ describe("Integration & Security Testing: Auth Pipeline", () => {
         });
       expect(resUnregisteredEmail.status).toBe(401);
       expect(resUnregisteredEmail.body.error.code).toBe("UNAUTHORIZED");
-      
+
       // Asserts uniform messaging for user privacy
-      expect(resInvalidPassword.body.message).toBe(resUnregisteredEmail.body.message);
+      expect(resInvalidPassword.body.message).toBe(
+        resUnregisteredEmail.body.message,
+      );
     });
 
     it("Session Revocation (Logout) -> Instant subsequent blocking", async () => {
@@ -138,17 +143,18 @@ describe("Integration & Security Testing: Auth Pipeline", () => {
 
     it("Expired Context -> Assert 401 Unauthorized", async () => {
       // Simulate expired token manually signing with negative lifetime
-      const JWT_SECRET = process.env.JWT_SECRET || JWT_CONFIG.ACCESS_SECRET_DEFAULT;
+      const JWT_SECRET =
+        process.env.JWT_SECRET || JWT_CONFIG.ACCESS_SECRET_DEFAULT;
       const expiredToken = jwt.sign(
         { id: "dummy", email: "dummy@test.com", role: "CUSTOMER" },
         JWT_SECRET,
-        { expiresIn: "-1s" }
+        { expiresIn: "-1s" },
       );
-      
+
       const res = await request(app)
         .get("/api/v1/auth/profile")
         .set("Authorization", `Bearer ${expiredToken}`);
-      
+
       expect(res.status).toBe(401);
       expect(res.body.message).toBe("Access token has expired");
     });
@@ -161,7 +167,7 @@ describe("Integration & Security Testing: Auth Pipeline", () => {
       const res = await request(app)
         .get("/api/v1/auth/profile")
         .set("Authorization", `Bearer ${activeToken}`);
-      
+
       expect(res.status).toBe(401);
       expect(res.body.message).toBe("User not found");
     });

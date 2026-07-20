@@ -8,7 +8,9 @@ const ForbiddenError = require("../errors/ForbiddenError");
 const authorize = (...allowedRoles) => {
   return (req, res, next) => {
     if (!req.user || !allowedRoles.includes(req.user.role)) {
-      return next(new ForbiddenError("Access denied. Insufficient permissions."));
+      return next(
+        new ForbiddenError("Access denied. Insufficient permissions."),
+      );
     }
     next();
   };

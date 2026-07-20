@@ -17,7 +17,7 @@ class UserService {
     if (!user) {
       throw new NotFoundError("User not found");
     }
-    
+
     // Prevent updating sensitive fields through this method
     delete updateData.password;
     delete updateData.role;
@@ -45,21 +45,24 @@ class UserService {
   }
 
   async changeStatus(adminUser, targetUserId, newStatus) {
-    if (adminUser.role !== 'ADMIN') {
+    if (adminUser.role !== "ADMIN") {
       throw new ForbiddenError("Only admins can change user status");
     }
-    
+
     const user = await userRepository.findUserById(targetUserId);
     if (!user) {
       throw new NotFoundError("User not found");
     }
 
-    const updatedUser = await userRepository.updateUserStatus(targetUserId, newStatus);
+    const updatedUser = await userRepository.updateUserStatus(
+      targetUserId,
+      newStatus,
+    );
     return this._sanitizeUser(updatedUser);
   }
 
   async changeRole(adminUser, targetUserId, newRole) {
-    if (adminUser.role !== 'ADMIN') {
+    if (adminUser.role !== "ADMIN") {
       throw new ForbiddenError("Only admins can change user roles");
     }
 
@@ -68,7 +71,10 @@ class UserService {
       throw new NotFoundError("User not found");
     }
 
-    const updatedUser = await userRepository.updateUserRole(targetUserId, newRole);
+    const updatedUser = await userRepository.updateUserRole(
+      targetUserId,
+      newRole,
+    );
     return this._sanitizeUser(updatedUser);
   }
 

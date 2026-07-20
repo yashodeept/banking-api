@@ -6,7 +6,7 @@ class LedgerService {
   /**
    * Posts a transaction to the ledger and updates the wallet balance.
    * This is a low-level primitive intended to be run inside a transaction block.
-   * 
+   *
    * @param {Object} params
    * @param {string} params.transactionId
    * @param {string} params.walletId
@@ -15,9 +15,14 @@ class LedgerService {
    * @param {number|Prisma.Decimal} params.currentBalance
    * @param {Object} tx - The active Prisma transaction client
    */
-  async postTransaction({ transactionId, walletId, entryType, amount, currentBalance }, tx) {
+  async postTransaction(
+    { transactionId, walletId, entryType, amount, currentBalance },
+    tx,
+  ) {
     if (!tx) {
-      throw new Error("postTransaction requires an active database transaction context");
+      throw new Error(
+        "postTransaction requires an active database transaction context",
+      );
     }
 
     const decimalAmount = new Prisma.Decimal(amount);
@@ -38,7 +43,7 @@ class LedgerService {
         amount: decimalAmount,
         balanceAfter,
       },
-      tx
+      tx,
     );
 
     // 3. Update the materialized cache layer (Wallet balance)
@@ -56,7 +61,7 @@ class LedgerService {
   async calculateRunningBalance(walletId, tx) {
     const history = await ledgerRepository.getBalanceHistory(walletId, tx);
     let runningBalance = new Prisma.Decimal(0.0);
-    
+
     for (const entry of history) {
       const amt = new Prisma.Decimal(entry.amount);
       if (entry.entryType === "CREDIT") {
@@ -65,7 +70,7 @@ class LedgerService {
         runningBalance = runningBalance.minus(amt);
       }
     }
-    
+
     return runningBalance;
   }
 }

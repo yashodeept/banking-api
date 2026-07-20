@@ -18,6 +18,7 @@ A modern, secure, and robust RESTful Banking API built using Node.js, Express, P
 - **Database**: PostgreSQL (with PG Driver Adapter)
 - **Validation**: Zod
 - **Logger**: Winston
+- **Task Queue**: BullMQ & Redis (For asynchronous payment/webhook processing)
 
 ---
 
@@ -67,16 +68,16 @@ We use Prisma with PostgreSQL. Below is the `User` model and `UserRole` enum cur
 
 ### `Wallet` Model
 
-| Field          | Type           | Attributes / Modifiers      | Description                               |
-| -------------- | -------------- | --------------------------- | ----------------------------------------- |
-| `id`           | `String`       | `@id`, `@default(cuid())`   | Unique identifier.                        |
-| `walletNumber` | `String`       | `@unique`                   | Unalterable cryptographic identifier.     |
-| `balance`      | `Decimal`      | `@default(0.00) @db.Decimal`| Financial balance (Decimal type).         |
-| `currency`     | `String`       | `@default("INR")`           | Fiat currency code.                       |
-| `status`       | `WalletStatus` | `@default(ACTIVE)`          | Wallet lifecycle state.                   |
-| `userId`       | `String`       | `@unique`                   | Reference to User owner.                  |
-| `createdAt`    | `DateTime`     | `@default(now())`           | Creation timestamp.                       |
-| `updatedAt`    | `DateTime`     | `@updatedAt`                | Automatic update timestamp.               |
+| Field          | Type           | Attributes / Modifiers       | Description                           |
+| -------------- | -------------- | ---------------------------- | ------------------------------------- |
+| `id`           | `String`       | `@id`, `@default(cuid())`    | Unique identifier.                    |
+| `walletNumber` | `String`       | `@unique`                    | Unalterable cryptographic identifier. |
+| `balance`      | `Decimal`      | `@default(0.00) @db.Decimal` | Financial balance (Decimal type).     |
+| `currency`     | `String`       | `@default("INR")`            | Fiat currency code.                   |
+| `status`       | `WalletStatus` | `@default(ACTIVE)`           | Wallet lifecycle state.               |
+| `userId`       | `String`       | `@unique`                    | Reference to User owner.              |
+| `createdAt`    | `DateTime`     | `@default(now())`            | Creation timestamp.                   |
+| `updatedAt`    | `DateTime`     | `@updatedAt`                 | Automatic update timestamp.           |
 
 ### Database & Authentication Architecture Rules
 
@@ -107,6 +108,7 @@ We use Prisma with PostgreSQL. Below is the `User` model and `UserRole` enum cur
 ## API Endpoints Overview
 
 ### User Operations
+
 - `GET /api/v1/users/me`: Fetch authenticated user profile.
 - `PATCH /api/v1/users/me`: Update profile details.
 - `PATCH /api/v1/users/change-password`: Update credentials.
@@ -116,6 +118,7 @@ We use Prisma with PostgreSQL. Below is the `User` model and `UserRole` enum cur
 - `PATCH /api/v1/users/:id/role`: Change user role (Requires `ADMIN`).
 
 ### Wallet Operations
+
 - `POST /api/v1/wallet`: Create personal wallet instance.
 - `GET /api/v1/wallet`: Fetch active wallet details.
 - `PATCH /api/v1/wallet/freeze`: Suspend wallet transactions (Requires `ADMIN`).
@@ -123,6 +126,7 @@ We use Prisma with PostgreSQL. Below is the `User` model and `UserRole` enum cur
 - `PATCH /api/v1/wallet/close`: Terminate active wallet (Irreversible).
 
 ### Transaction Operations
+
 - `POST /api/v1/transactions/deposit`: Deposit funds.
 - `POST /api/v1/transactions/withdraw`: Withdraw funds.
 - `POST /api/v1/transactions/transfer`: Transfer funds to another account.
@@ -130,8 +134,27 @@ We use Prisma with PostgreSQL. Below is the `User` model and `UserRole` enum cur
 - `GET /api/v1/transactions/:reference`: View transaction details.
 
 ### Ledger Operations
+
 - `GET /api/v1/ledger`: Fetch all ledger entries (Requires `ADMIN`, `AUDITOR`).
 - `GET /api/v1/ledger/:transactionRef`: Audit ledger entries by transaction (Requires `ADMIN`, `AUDITOR`).
+
+### Payment Operations
+
+- `POST /api/v1/payments`: Initialize transaction request (Supports Idempotency).
+- `POST /api/v1/payments/verify`: Reconcile gateway hooks.
+- `POST /api/v1/payments/retry`: Re-trigger a failed payment attempt.
+- `GET /api/v1/payments`: Fetch personal history log.
+- `GET /api/v1/payments/:reference`: Fetch specific transaction record.
+
+### Audit Reporting
+
+- `GET /api/v1/audit`: Fetch all data mutation logs (Requires `ADMIN`, `AUDITOR`).
+- `GET /api/v1/audit/user/:id`: Track specific consumer action history (Requires `ADMIN`, `AUDITOR`).
+- `GET /api/v1/audit/entity/:entity`: Monitor structural model updates (Requires `ADMIN`, `AUDITOR`).
+
+### External Webhooks
+
+- `POST /api/v1/webhooks/payment`: Ingest status callbacks from external payment partners.
 
 ---
 
@@ -182,7 +205,21 @@ The middleware layer (`src/middlewares/`) handles cross-cutting concerns like gl
 - **Authentication Interceptor:** The JWT Auth middleware verifies the token signature, checks the database to ensure the session/user is still valid (preventing stale sessions), and injects a sanitized payload into `req.user`.
 - **Global Error Interceptor:** All exceptions are passed to this centralized handler. It dynamically translates native runtime failures, Prisma database constraints, and custom AppError instances into a uniform JSON response masking internal traces securely in production.
 
-### 6. Utility Layer
+### 6. Payment Engine & Idempotency
+
+- **Strict Idempotency Constraints:** Incoming payment requests are intercepted via an `Idempotency-Key` header. Responses are securely cached in a Redis high-speed data store. Identical requests instantly short-circuit processing, returning the exact cached response body without executing downstream database operations.
+- **Atomic Execution:** Core financial updates and INITIATED state tracks are executed safely inside a `prisma.$transaction()` block.
+
+### 7. Event-Driven Asynchronous Processing
+
+- **Domain Event Decoupling:** Downstream jobs (notification, webhooks, third-party syncs) are decoupled from the main process thread. After core states are stored, strongly typed events (e.g., `PAYMENT_SUCCESS`) are emitted to BullMQ queues.
+- **Background Workers:** High-latency tasks are processed out-of-band by dedicated worker consumers, ensuring the primary Express execution thread never blocks.
+
+### 8. Immutable Audit Trail
+
+- **Mutation Tracking:** Record mutations are securely logged inside the `AuditLog` table on a system level. This model operates strictly as append-only.
+
+### 9. Utility Layer
 
 Contains reusable helper utilities and configuration:
 
@@ -236,6 +273,7 @@ JWT_REFRESH_SECRET="your-secure-jwt-refresh-secret"
 This project utilizes `Jest` and `Supertest` to comprehensively verify integration pipelines and security boundaries. Tests automatically run against an isolated test database defined in `.env.test`.
 
 **To execute the test suite locally:**
+
 1. Ensure your PostgreSQL instance is running.
 2. Initialize the isolated test database schema:
    ```bash

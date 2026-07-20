@@ -6,7 +6,8 @@ beforeAll(async () => {
 
 afterEach(async () => {
   // Truncate all tables after each test to ensure a clean slate
-  const tablenames = await prisma.$queryRaw`SELECT tablename FROM pg_tables WHERE schemaname='public'`;
+  const tablenames =
+    await prisma.$queryRaw`SELECT tablename FROM pg_tables WHERE schemaname='public'`;
 
   const tables = tablenames
     .map(({ tablename }) => tablename)

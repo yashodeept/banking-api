@@ -5,6 +5,9 @@ const transactionRoutes = require("./transaction.routes");
 const userRoutes = require("./user.routes");
 const walletRoutes = require("./wallet.routes");
 const ledgerRoutes = require("./ledger.routes");
+const paymentRoutes = require("./payment.routes");
+const auditRoutes = require("./audit.routes");
+const webhookRoutes = require("./webhook.routes");
 
 const router = express.Router();
 
@@ -14,5 +17,8 @@ router.use("/transactions", transactionRoutes);
 router.use("/users", userRoutes);
 router.use("/wallet", walletRoutes);
 router.use("/ledger", ledgerRoutes);
+router.use("/payments", paymentRoutes);
+router.use("/audit", auditRoutes);
+router.use("/webhooks", webhookRoutes);
 
 module.exports = router;

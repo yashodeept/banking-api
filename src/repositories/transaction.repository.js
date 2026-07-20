@@ -35,10 +35,7 @@ async function findTransactionByReference(transactionRef, tx = prisma) {
 async function findUserTransactions(walletId, tx = prisma) {
   return tx.transaction.findMany({
     where: {
-      OR: [
-        { senderWalletId: walletId },
-        { receiverWalletId: walletId },
-      ],
+      OR: [{ senderWalletId: walletId }, { receiverWalletId: walletId }],
     },
     orderBy: { createdAt: "desc" },
   });

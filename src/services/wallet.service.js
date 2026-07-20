@@ -57,7 +57,9 @@ class WalletService {
     }
     // Enforce that wallets in a CLOSED state cannot be reopened
     if (wallet.status === "CLOSED") {
-      throw new BadRequestError("Cannot unfreeze a closed wallet. Closed wallets cannot be reopened.");
+      throw new BadRequestError(
+        "Cannot unfreeze a closed wallet. Closed wallets cannot be reopened.",
+      );
     }
     return walletRepository.updateWalletStatus(walletId, "ACTIVE");
   }

@@ -31,11 +31,21 @@ async function authenticate(req, res, next) {
     }
 
     if (["BLOCKED", "LOCKED", "INACTIVE"].includes(dbUser.status)) {
-      return sendError(res, "Access denied. Account is compromised or suspended.", [], 403);
+      return sendError(
+        res,
+        "Access denied. Account is compromised or suspended.",
+        [],
+        403,
+      );
     }
 
     // 4. Context Injection
-    req.user = { id: dbUser.id, email: dbUser.email, role: dbUser.role, status: dbUser.status };
+    req.user = {
+      id: dbUser.id,
+      email: dbUser.email,
+      role: dbUser.role,
+      status: dbUser.status,
+    };
 
     // 5. Pipeline Release
     next();

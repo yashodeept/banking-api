@@ -3,6 +3,8 @@ const env = require("./config/env");
 const logger = require("./config/logger");
 const { connectDb, prisma } = require("./config/db");
 const app = require("./app");
+const paymentWorker = require("./workers/payment.worker");
+const webhookWorker = require("./workers/webhook.worker");
 
 let server;
 
@@ -38,8 +40,16 @@ const gracefulShutdown = async (signal, err) => {
     logger.info("Disconnecting from database...");
     await prisma.$disconnect();
     logger.info("Database disconnected.");
+
+    logger.info("Stopping background workers...");
+    await paymentWorker.close();
+    await webhookWorker.close();
+    logger.info("Workers stopped.");
   } catch (dbError) {
-    logger.error("Error disconnecting database during shutdown:", dbError);
+    logger.error(
+      "Error disconnecting database or workers during shutdown:",
+      dbError,
+    );
   }
 
   clearTimeout(forceExitTimeout);

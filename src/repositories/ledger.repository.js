@@ -27,7 +27,7 @@ async function findLedgerByWallet(walletId, tx = prisma) {
  * @param {Object} tx - Optional Prisma transaction client.
  */
 async function getBalanceHistory(walletId, tx = prisma) {
-  // Simplistic approach to aggregate credit minus debit, but usually 
+  // Simplistic approach to aggregate credit minus debit, but usually
   // you just query the ledger entries to re-aggregate if needed.
   // For now, we return the ledger entries which represent history.
   return tx.ledgerEntry.findMany({

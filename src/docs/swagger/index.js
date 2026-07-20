@@ -92,4 +92,45 @@
  *               type: array
  *               items:
  *                 type: object
+ *
+ *     CreatePaymentRequest:
+ *       type: object
+ *       required:
+ *         - amount
+ *         - method
+ *         - receiverWalletId
+ *       properties:
+ *         amount:
+ *           type: number
+ *           example: 1000
+ *         method:
+ *           type: string
+ *           enum: [UPI, BANK_TRANSFER, CARD, WALLET]
+ *         receiverWalletId:
+ *           type: string
+ *           example: "clhq1z..."
+ *         description:
+ *           type: string
+ *           example: "Payment for services"
+ *
+ *     PaymentResponse:
+ *       type: object
+ *       properties:
+ *         id:
+ *           type: string
+ *         paymentRef:
+ *           type: string
+ *         transactionId:
+ *           type: string
+ *         amount:
+ *           type: number
+ *         method:
+ *           type: string
+ *         status:
+ *           type: string
+ *         idempotencyKey:
+ *           type: string
+ *         createdAt:
+ *           type: string
+ *           format: date-time
  */

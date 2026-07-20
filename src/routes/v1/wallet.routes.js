@@ -7,12 +7,27 @@ const { createWalletSchema } = require("../../validators/wallet.validator");
 
 const router = express.Router();
 
-router.post("/", authenticate, validate(createWalletSchema), walletController.createWallet);
+router.post(
+  "/",
+  authenticate,
+  validate(createWalletSchema),
+  walletController.createWallet,
+);
 router.get("/", authenticate, walletController.getWallet);
 
 // Administrative freezing
-router.patch("/freeze", authenticate, authorize("ADMIN"), walletController.freezeWallet);
-router.patch("/unfreeze", authenticate, authorize("ADMIN"), walletController.unfreezeWallet);
+router.patch(
+  "/freeze",
+  authenticate,
+  authorize("ADMIN"),
+  walletController.freezeWallet,
+);
+router.patch(
+  "/unfreeze",
+  authenticate,
+  authorize("ADMIN"),
+  walletController.unfreezeWallet,
+);
 
 // Close wallet
 router.patch("/close", authenticate, walletController.closeWallet);
