@@ -4,13 +4,16 @@ const cors = require("cors");
 const compression = require("compression");
 const cookieParser = require("cookie-parser");
 const morgan = require("morgan");
-const rateLimit = require("express-rate-limit");
+const { requestIdMiddleware } = require("./shared/middlewares/requestId.middleware");
+const limiter = require("./shared/middlewares/rateLimiter.middleware");
+const { prisma } = require("./shared/config/db");
+const redisClient = require("./shared/config/redis");
 
-const env = require("./config/env");
-const logger = require("./config/logger");
-const { setupSwagger } = require("./config/swagger");
+const env = require("./shared/config/env");
+const logger = require("./shared/config/logger");
+const { setupSwagger } = require("./shared/config/swagger");
 const apiRouter = require("./routes");
-const globalErrorHandler = require("./middlewares/error.middleware");
+const globalErrorHandler = require("./shared/middlewares/error.middleware");
 
 const app = express();
 
@@ -18,7 +21,7 @@ const app = express();
 app.set("trust proxy", 1);
 
 // 2. Global Security Middlewares
-app.use(helmet());
+app.use(helmet({ hidePoweredBy: true }));
 app.use(
   cors({
     origin: env.NODE_ENV === "production" ? false : "*", // Strict CORS in production
@@ -27,17 +30,6 @@ app.use(
 );
 
 // 3. Rate Limiter to prevent abuse on API endpoints
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  limit: 100, // Limit each IP to 100 requests per window
-  standardHeaders: "draft-7",
-  legacyHeaders: false,
-  message: {
-    status: 429,
-    message:
-      "Too many requests from this IP, please try again after 15 minutes.",
-  },
-});
 app.use("/api", limiter);
 
 // 4. Request parsing and optimization
@@ -45,6 +37,7 @@ app.use(compression());
 app.use(express.json({ limit: "10kb" })); // Limit body payload to protect against DOS
 app.use(express.urlencoded({ extended: true, limit: "10kb" }));
 app.use(cookieParser());
+app.use(requestIdMiddleware);
 
 // 5. Custom HTTP Request Logging (integrate Morgan with Winston)
 const morganFormat = env.NODE_ENV === "development" ? "dev" : "combined";
@@ -63,12 +56,38 @@ setupSwagger(app);
 app.use("/api", apiRouter);
 
 // 8. Base & Health Check routes
-app.get("/health", (req, res) => {
-  res.status(200).json({
-    status: "OK",
-    timestamp: new Date().toISOString(),
-    env: env.NODE_ENV,
-  });
+app.get("/live", (req, res) => {
+  res.status(200).json({ status: "UP", message: "Node runtime is responsive" });
+});
+
+app.get("/ready", async (req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    res.status(200).json({ status: "UP", database: "UP" });
+  } catch (error) {
+    res.status(503).json({ status: "DOWN", database: "DOWN" });
+  }
+});
+
+app.get("/health", async (req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    const redisPing = await redisClient.ping();
+    if (redisPing !== "PONG") throw new Error("Redis did not respond with PONG");
+    
+    res.status(200).json({
+      status: "UP",
+      database: "UP",
+      redis: "UP",
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    logger.error("Health check failed", error);
+    res.status(503).json({
+      status: "DOWN",
+      message: error.message
+    });
+  }
 });
 
 // 9. Handle 404 Route Not Found

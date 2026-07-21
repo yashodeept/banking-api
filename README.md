@@ -247,7 +247,7 @@ JWT_SECRET="your-secure-jwt-access-secret"
 JWT_REFRESH_SECRET="your-secure-jwt-refresh-secret"
 ```
 
-### Setup & Run
+### Setup & Run (Local Development)
 
 1. Install dependencies:
    ```bash
@@ -261,8 +261,31 @@ JWT_REFRESH_SECRET="your-secure-jwt-refresh-secret"
    ```bash
    npm run dev
    ```
-4. Access Interactive Documentation (Swagger UI):
-   Open `http://localhost:5000/api-docs` in your browser to view and test all available endpoints.
+
+### Setup & Run (Docker / Production Ready)
+
+To spin up the entire application stack (API, Background Worker, PostgreSQL, Redis, and Nginx proxy):
+
+1. **Build and start the containers:**
+   ```bash
+   docker-compose up --build -d
+   ```
+2. **Verify Service Health:**
+   ```bash
+   curl http://localhost/health
+   # Expected output: {"status":"UP","database":"UP","redis":"UP",...}
+   ```
+3. **View Logs (Winston JSON Structured output):**
+   ```bash
+   docker-compose logs -f bank-api
+   ```
+4. **Shutdown Gracefully:**
+   ```bash
+   docker-compose down
+   ```
+
+### Access Interactive Documentation (Swagger UI)
+Open `http://localhost:5000/api-docs` (or `http://localhost/api-docs` via Docker Nginx) in your browser to view and test all available endpoints.
 
 ---
 

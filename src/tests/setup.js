@@ -1,4 +1,4 @@
-const { prisma } = require("../config/db");
+const { prisma } = require("../shared/config/db");
 
 beforeAll(async () => {
   // Note: Database must be pushed/migrated before tests start via command line

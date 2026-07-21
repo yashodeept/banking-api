@@ -1,8 +1,8 @@
 const request = require("supertest");
 const jwt = require("jsonwebtoken");
 const app = require("../../app");
-const { prisma } = require("../../config/db");
-const { JWT_CONFIG } = require("../../utils/constants");
+const { prisma } = require("../../shared/config/db");
+const { JWT_CONFIG } = require("../../shared/utils/constants");
 
 describe("Integration & Security Testing: Auth Pipeline", () => {
   const registerPayload = {

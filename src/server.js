@@ -1,10 +1,11 @@
 // 1. Load environment configurations first to ensure validation occurs before any imports
-const env = require("./config/env");
-const logger = require("./config/logger");
-const { connectDb, prisma } = require("./config/db");
+const env = require("./shared/config/env");
+const logger = require("./shared/config/logger");
+const { connectDb, prisma } = require("./shared/config/db");
 const app = require("./app");
-const paymentWorker = require("./workers/payment.worker");
-const webhookWorker = require("./workers/webhook.worker");
+const paymentWorker = require("./shared/workers/payment.worker");
+const webhookWorker = require("./shared/workers/webhook.worker");
+const redisClient = require("./shared/config/redis");
 
 let server;
 
@@ -45,6 +46,10 @@ const gracefulShutdown = async (signal, err) => {
     await paymentWorker.close();
     await webhookWorker.close();
     logger.info("Workers stopped.");
+
+    logger.info("Closing Redis connection...");
+    await redisClient.quit();
+    logger.info("Redis disconnected.");
   } catch (dbError) {
     logger.error(
       "Error disconnecting database or workers during shutdown:",

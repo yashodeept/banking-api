@@ -1,3 +1,3 @@
-const { prisma } = require("../config/db");
+const { prisma } = require("../shared/config/db");
 
 module.exports = prisma;
