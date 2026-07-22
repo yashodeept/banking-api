@@ -1,0 +1,27 @@
+{
+  "id": "2e6840d2-9383-4927-a068-07e15d86289b",
+  "name": "Banking Platform Environment",
+  "values": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:5000/api/v1",
+      "enabled": true
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "enabled": true
+    },
+    {
+      "key": "user_id",
+      "value": "",
+      "enabled": true
+    },
+    {
+      "key": "wallet_number",
+      "value": "",
+      "enabled": true
+    }
+  ],
+  "_postman_variable_scope": "environment"
+}
